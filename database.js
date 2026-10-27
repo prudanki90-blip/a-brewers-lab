@@ -114,12 +114,24 @@
         geraniol: null
       },
 
+      
       evidence: {
         level: "starter_estimate",
         verified: false,
-        sources: [],
+        sources: [
+          {
+            title: "Composition of sugars, organic acids, and total phenolics in 25 wild or cultivated berry species",
+            url: "https://pubmed.ncbi.nlm.nih.gov/22924969/",
+            scope: "Berry-composition research including raspberry; does not verify every value in this starter profile."
+          }
+        ],
         notes: "Generic starter profile; cultivar and ripeness affect composition."
       }
+
+
+      
+
+ 
     },
 
     apple: {
@@ -179,12 +191,22 @@
         geraniol: null
       },
 
+      
       evidence: {
         level: "starter_estimate",
         verified: false,
-        sources: [],
+        sources: [
+          {
+            title: "Determination of anthocyanins, organic acids, and phenolic acids in hibiscus market products using LC/UV/MS",
+            url: "https://pubmed.ncbi.nlm.nih.gov/38235990/",
+            scope: "Research on hibiscus products and their chemical variation; does not verify every value in this starter profile."
+          }
+        ],
         notes: "Illustrative profile; verify acid values and dry-weight basis."
       }
+
+
+     
     },
 
     black_tea: {
