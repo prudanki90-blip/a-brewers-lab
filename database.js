@@ -27,17 +27,7 @@
       acidsMgPer100g: {
         citric: 3100,
         malic: 2200,
-        tartaric: 0
-        
-sources: [
-  {
-    title: "Composition of sugars, organic acids, and total phenolics in 25 berry species",
-    url: "https://pubmed.ncbi.nlm.nih.gov/22924969/",
-    scope: "Published berry-composition research; supports general composition context, not every value in this starter profile."
-  }
-],
-
-        
+        tartaric: 0   
       },
 
       tanninIndex: 480,
@@ -49,12 +39,20 @@ sources: [
         terpinolene: null
       },
 
+     
       evidence: {
         level: "starter_estimate",
         verified: false,
-        sources: [],
+        sources: [
+          {
+            title: "Composition of sugars, organic acids, and total phenolics in 25 berry species",
+            url: "https://pubmed.ncbi.nlm.nih.gov/22924969/",
+            scope: "Published berry-composition research; supports general composition context, not every value in this starter profile."
+          }
+        ],
         notes: "Illustrative development profile. Confirm cultivar, maturity, and analytical basis."
       }
+
     },
 
     yellow_passionfruit: {
