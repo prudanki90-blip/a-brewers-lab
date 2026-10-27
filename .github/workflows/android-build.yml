@@ -1,0 +1,47 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Allows you to trigger the build manually anytime
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Set up Java JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Install Dependencies
+      run: |
+        npm init -y
+        npm install @capacitor/core @capacitor/cli
+        npm install @capacitor/android
+        npx cap init "Predictive Canvas" "com.lab.molecularbrew" --web-dir=.
+
+    - name: Add Android Platform Framework
+      run: |
+        npx cap add android
+        npx cap sync
+
+    - name: Compile Unsigned Android APK
+      run: |
+        cd android && ./gradlew assembleDebug
+
+    - name: Upload Finished APK Asset
+      uses: actions/upload-artifact@v4
+      with:
+        name: molecular-brew-canvas-apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk
