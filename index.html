@@ -85,6 +85,23 @@
     th,td { padding:10px; border-bottom:1px solid var(--border); text-align:left; }
     th { color:var(--muted); font-weight:600; }
     td:last-child,th:last-child { text-align:right; }
+    
+.quality-panel{margin-top:22px}
+.quality-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin:18px 0}
+.quality-metric{min-width:0;padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--deep)}
+.quality-metric-label{color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase}
+.quality-metric-value{display:block;margin-top:5px;color:var(--cyan);font-size:23px;font-weight:800;overflow-wrap:anywhere}
+.quality-summary{margin:12px 0;padding:13px;border:1px solid var(--border);border-radius:9px;background:var(--deep);color:var(--muted);font-size:12px}
+.quality-summary.warning{border-color:#854d0e;color:#fcd34d}
+.quality-summary.error{border-color:var(--rose);color:#fda4af}
+.quality-table-wrap{margin-top:20px;overflow-x:auto}
+.quality-table{min-width:760px}
+.quality-table th:last-child,.quality-table td:last-child{text-align:left}
+.quality-status-ok{color:#86efac}
+.quality-status-warning{color:#fcd34d}
+.quality-status-error{color:#fda4af}
+@media(max-width:700px){.quality-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
     .footer { padding:24px 0 8px; color:#64748b; font-size:11px; text-align:center; }
     @media(max-width:850px) {
       body { padding:16px; }
@@ -252,6 +269,53 @@
       </div>
     </section>
   </div>
+
+  
+<section class="panel quality-panel" aria-labelledby="quality-title">
+  <div class="panel-heading">
+    <div>
+      <h2 id="quality-title">Data Quality Audit</h2>
+      <p>Ingredient evidence, source coverage and missing measurements.</p>
+    </div>
+  </div>
+  <div class="quality-metrics">
+    <div class="quality-metric">
+      <div class="quality-metric-label">Ingredient records</div>
+      <output class="quality-metric-value" id="quality-total">—</output>
+    </div>
+    <div class="quality-metric">
+      <div class="quality-metric-label">Records with sources</div>
+      <output class="quality-metric-value" id="quality-sourced">—</output>
+    </div>
+    <div class="quality-metric">
+      <div class="quality-metric-label">Source coverage</div>
+      <output class="quality-metric-value" id="quality-coverage">—</output>
+    </div>
+    <div class="quality-metric">
+      <div class="quality-metric-label">Unknown compounds</div>
+      <output class="quality-metric-value" id="quality-unknown">—</output>
+    </div>
+  </div>
+  <div id="quality-summary" class="quality-summary" role="status">
+    Preparing audit…
+  </div>
+  <div class="quality-table-wrap">
+    <h3>Ingredient evidence register</h3>
+    <table class="quality-table">
+      <thead>
+        <tr>
+          <th>Ingredient</th><th>Evidence</th><th>Sources</th>
+          <th>Known compounds</th><th>Unknown compounds</th>
+          <th>Status</th><th>Findings</th>
+        </tr>
+      </thead>
+      <tbody id="quality-table-body">
+        <tr><td colspan="7">Waiting for audit…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
 
   <footer class="footer">
     A Brewer's Lab · Experimental estimates only · Verify results with
@@ -641,6 +705,87 @@ function runSimulation() {
   }
 }
 
+  
+function renderDataQualityPanel() {
+  const $q = id => document.getElementById(id);
+  const summary = $q("quality-summary");
+  const tbody = $q("quality-table-body");
+
+  try {
+    if (!window.BrewingDataQuality) {
+      throw new Error("Data quality auditor did not load.");
+    }
+
+    const report = window.BrewingDataQuality.runAudit();
+    if (report.error) throw new Error(report.error);
+
+    $q("quality-total").textContent = report.ingredientCount;
+    $q("quality-sourced").textContent =
+      report.recordsWithSources + " / " + report.ingredientCount;
+    $q("quality-coverage").textContent = report.sourceCoveragePct + "%";
+    $q("quality-unknown").textContent = report.unknownCompounds;
+
+    summary.className = "quality-summary";
+    if (report.recordsWithErrors > 0) {
+      summary.classList.add("error");
+    } else if (report.recordsWithWarnings > 0 ||
+               report.sourceCoveragePct < 100) {
+      summary.classList.add("warning");
+    }
+
+    summary.textContent =
+      report.recordsWithErrors + " record(s) with errors · " +
+      report.recordsWithWarnings + " record(s) with warnings · " +
+      report.totalSourceEntries + " source entries. " +
+      "Prediction readiness: " +
+      (report.predictionReadiness
+        ? "requirements met"
+        : "not yet established; research and verification remain necessary.");
+
+    tbody.replaceChildren();
+
+    for (const record of report.records) {
+      const row = document.createElement("tr");
+      const findings = [
+        ...record.errors.map(x => "ERROR: " + x),
+        ...record.warnings
+      ];
+
+      const values = [
+        record.name || record.id,
+        String(record.evidenceLevel).replaceAll("_", " "),
+        record.sourceCount,
+        record.knownCompounds,
+        record.unknownCompounds,
+        record.errors.length ? "Error" :
+          record.warnings.length ? "Needs review" : "Passed",
+        findings.length ? findings.join(" ") : "No findings"
+      ];
+
+      values.forEach((value, index) => {
+        const cell = document.createElement("td");
+        cell.textContent = String(value);
+
+        if (index === 5) {
+          cell.className = record.errors.length
+            ? "quality-status-error"
+            : record.warnings.length
+              ? "quality-status-warning"
+              : "quality-status-ok";
+        }
+
+        row.appendChild(cell);
+      });
+
+      tbody.appendChild(row);
+    }
+  } catch (error) {
+    summary.className = "quality-summary error";
+    summary.textContent = "Audit failed: " + error.message;
+  }
+}
+
+
 function initializeApp() {
   try {
     if (typeof window.BrewingKineticEngine !== "function") {
@@ -655,7 +800,13 @@ function initializeApp() {
     engine = new window.BrewingKineticEngine();
 
     populateBotanicalSelect();
-    initializeChart();
+initializeChart();
+renderDataQualityPanel();
+
+
+    
+
+   
 
     INPUTS.forEach(id => $(id).addEventListener("input", runSimulation));
     $("adjunct-select").addEventListener("change", runSimulation);
