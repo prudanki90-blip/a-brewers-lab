@@ -5,961 +5,672 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b0f17">
-  <meta name="description" content="A Brewer's Lab — interactive botanical extraction and brewing simulation workspace.">
+  <meta name="description" content="A Brewer's Lab — experimental botanical extraction and brewing simulation workspace.">
   <title>A Brewer's Lab | Predictive Recipe Engine</title>
-
-  <!-- Correct Chart.js library URL -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 
   <style>
     :root {
       color-scheme: dark;
-      --bg: #0b0f17;
-      --panel: #131a26;
-      --panel-deep: #0e1420;
-      --border: #26344a;
-      --cyan: #06b6d4;
-      --amber: #f59e0b;
-      --rose: #f43f5e;
-      --green: #34d399;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --radius: 14px;
+      --bg:#0b0f17; --panel:#131a26; --deep:#0e1420;
+      --border:#26344a; --cyan:#06b6d4; --amber:#f59e0b;
+      --rose:#f43f5e; --green:#34d399; --text:#f1f5f9;
+      --muted:#94a3b8; --radius:14px;
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing:border-box; }
     body {
-      margin: 0;
-      padding: 24px;
-      background:
-        radial-gradient(ellipse at top left, #10202d 0%, transparent 42%),
-        var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont,
-        "Segoe UI", sans-serif;
-      line-height: 1.55;
+      margin:0; padding:24px; color:var(--text);
+      background:radial-gradient(ellipse at top left,#10202d 0%,transparent 42%),var(--bg);
+      font:15px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     }
-
-    .app {
-      max-width: 1440px;
-      margin: 0 auto;
+    .app { max-width:1440px; margin:auto; }
+    .topbar { display:flex; justify-content:space-between; align-items:center;
+      flex-wrap:wrap; gap:18px; padding-bottom:22px; border-bottom:1px solid var(--border); }
+    .brand { display:flex; align-items:center; gap:13px; }
+    .brand-icon { display:grid; place-items:center; width:48px; height:48px;
+      border:1px solid #155e75; border-radius:13px; background:#08232e;
+      color:var(--cyan); font-size:25px; }
+    .eyebrow { margin:0 0 3px; color:var(--cyan); font-size:11px;
+      font-weight:800; letter-spacing:2px; text-transform:uppercase; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { margin-bottom:0; font-size:clamp(23px,4vw,34px); letter-spacing:-.8px; }
+    .status { display:inline-flex; align-items:center; gap:8px; padding:8px 12px;
+      border:1px solid var(--border); border-radius:999px; color:var(--muted); font-size:12px; }
+    .status-dot { width:8px; height:8px; border-radius:50%; background:var(--green); }
+    .intro { max-width:760px; margin:22px 0; color:var(--muted); }
+    .grid { display:grid; grid-template-columns:minmax(300px,.92fr) minmax(0,1.08fr);
+      gap:22px; align-items:start; }
+    .panel { min-width:0; padding:23px; border:1px solid var(--border);
+      border-radius:var(--radius); background:rgba(19,26,38,.96);
+      box-shadow:0 12px 36px rgba(0,0,0,.12); }
+    .panel-heading { display:flex; justify-content:space-between; gap:12px; margin-bottom:18px; }
+    .panel-heading h2 { margin-bottom:4px; font-size:19px; }
+    .panel-heading p { margin-bottom:0; color:var(--muted); font-size:12px; }
+    .section-label { margin:23px 0 12px; padding-bottom:8px;
+      border-bottom:1px solid var(--border); color:var(--amber); font-size:12px;
+      font-weight:800; letter-spacing:1.2px; text-transform:uppercase; }
+    .field { margin-bottom:18px; }
+    label { display:block; margin-bottom:7px; color:#cbd5e1; font-size:13px; font-weight:600; }
+    select,input[type=number] { width:100%; min-height:43px; padding:10px 12px;
+      border:1px solid var(--border); border-radius:8px; background:var(--deep);
+      color:var(--text); font:inherit; }
+    input[type=range] { width:100%; accent-color:var(--cyan); cursor:pointer; }
+    select:focus-visible,input:focus-visible,button:focus-visible {
+      outline:2px solid var(--cyan); outline-offset:3px; }
+    .range-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .range-heading label { margin-bottom:0; }
+    .range-value { color:var(--cyan); font:700 13px ui-monospace,monospace; white-space:nowrap; }
+    .range-hints { display:flex; justify-content:space-between; color:#64748b; font-size:10px; }
+    .chart-wrap { position:relative; height:310px; padding:12px;
+      border:1px solid var(--border); border-radius:10px; background:var(--deep); }
+    .chart-fallback { display:none; position:absolute; inset:12px; align-content:center;
+      text-align:center; color:var(--muted); font-size:13px; }
+    .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:11px; margin-top:17px; }
+    .metric { min-width:0; padding:14px 10px; border:1px solid var(--border);
+      border-radius:10px; background:var(--deep); }
+    .metric-label { color:var(--muted); font-size:10px; font-weight:700;
+      letter-spacing:.8px; text-transform:uppercase; }
+    .metric-value { display:block; margin-top:5px; overflow-wrap:anywhere; color:var(--cyan);
+      font:800 clamp(17px,2vw,23px) ui-monospace,monospace; }
+    .alert,.notice { margin-top:16px; padding:13px; border:1px solid var(--border);
+      border-radius:9px; background:var(--deep); color:var(--muted); font-size:12px; }
+    .alert { display:none; border-color:var(--rose); background:rgba(244,63,94,.09); color:#fda4af; }
+    .alert strong { display:block; margin-bottom:5px; color:#fb7185; }
+    .notice.error { border-color:var(--rose); color:#fda4af; }
+    .notice.success { border-color:#166534; color:#86efac; }
+    .notice.warning { border-color:#854d0e; color:#fcd34d; }
+    .data-table-wrap { margin-top:22px; overflow-x:auto; }
+    .data-table-wrap h3 { margin-bottom:10px; font-size:15px; }
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    th,td { padding:10px; border-bottom:1px solid var(--border); text-align:left; }
+    th { color:var(--muted); font-weight:600; }
+    td:last-child,th:last-child { text-align:right; }
+    .footer { padding:24px 0 8px; color:#64748b; font-size:11px; text-align:center; }
+    @media(max-width:850px) {
+      body { padding:16px; }
+      .grid { grid-template-columns:1fr; }
+      .panel { padding:18px; }
     }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 18px;
-      flex-wrap: wrap;
-      padding-bottom: 22px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 13px;
-    }
-
-    .brand-icon {
-      display: grid;
-      place-items: center;
-      width: 48px;
-      height: 48px;
-      border: 1px solid #155e75;
-      border-radius: 13px;
-      background: #08232e;
-      color: var(--cyan);
-      font-size: 25px;
-    }
-
-    .eyebrow {
-      margin: 0 0 3px;
-      color: var(--cyan);
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    h1, h2, h3, p {
-      margin-top: 0;
-    }
-
-    h1 {
-      margin-bottom: 0;
-      font-size: clamp(23px, 4vw, 34px);
-      letter-spacing: -0.8px;
-    }
-
-    .status {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--green);
-    }
-
-    .intro {
-      max-width: 760px;
-      margin: 22px 0;
-      color: var(--muted);
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: minmax(300px, 0.92fr) minmax(0, 1.08fr);
-      gap: 22px;
-      align-items: start;
-    }
-
-    .panel {
-      min-width: 0;
-      padding: 23px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: rgba(19, 26, 38, 0.96);
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
-    }
-
-    .panel-heading {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-
-    .panel-heading h2 {
-      margin-bottom: 4px;
-      font-size: 19px;
-    }
-
-    .panel-heading p {
-      margin-bottom: 0;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .section-label {
-      margin: 23px 0 12px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
-      color: var(--amber);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-    }
-
-    .field {
-      margin-bottom: 18px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 7px;
-      color: #cbd5e1;
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    select,
-    input[type="number"] {
-      width: 100%;
-      min-height: 43px;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--panel-deep);
-      color: var(--text);
-      font: inherit;
-    }
-
-    input[type="range"] {
-      width: 100%;
-      accent-color: var(--cyan);
-      cursor: pointer;
-    }
-
-    select:focus-visible,
-    input:focus-visible,
-    button:focus-visible {
-      outline: 2px solid var(--cyan);
-      outline-offset: 3px;
-    }
-
-    .range-heading {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .range-heading label {
-      margin-bottom: 0;
-    }
-
-    .range-value {
-      color: var(--cyan);
-      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-      font-size: 13px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .range-hints {
-      display: flex;
-      justify-content: space-between;
-      color: #64748b;
-      font-size: 10px;
-    }
-
-    .chart-wrap {
-      position: relative;
-      height: 310px;
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--panel-deep);
-    }
-
-    .chart-fallback {
-      display: none;
-      position: absolute;
-      inset: 12px;
-      align-content: center;
-      text-align: center;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .metrics {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 11px;
-      margin-top: 17px;
-    }
-
-    .metric {
-      min-width: 0;
-      padding: 14px 10px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--panel-deep);
-    }
-
-    .metric-label {
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-    }
-
-    .metric-value {
-      display: block;
-      margin-top: 5px;
-      overflow-wrap: anywhere;
-      color: var(--cyan);
-      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-      font-size: clamp(17px, 2vw, 23px);
-      font-weight: 800;
-    }
-
-    .alert {
-      display: none;
-      margin-top: 17px;
-      padding: 15px;
-      border: 1px solid var(--rose);
-      border-radius: 9px;
-      background: rgba(244, 63, 94, 0.09);
-      color: #fda4af;
-      font-size: 13px;
-    }
-
-    .alert strong {
-      display: block;
-      margin-bottom: 5px;
-      color: #fb7185;
-    }
-
-    .notice {
-      margin-top: 16px;
-      padding: 13px;
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      background: var(--panel-deep);
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .notice.error {
-      border-color: var(--rose);
-      color: #fda4af;
-    }
-
-    .notice.success {
-      border-color: #166534;
-      color: #86efac;
-    }
-
-    .data-table-wrap {
-      margin-top: 22px;
-      overflow-x: auto;
-    }
-
-    .data-table-wrap h3 {
-      margin-bottom: 10px;
-      font-size: 15px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-
-    th, td {
-      padding: 10px;
-      border-bottom: 1px solid var(--border);
-      text-align: left;
-    }
-
-    th {
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    td:last-child, th:last-child {
-      text-align: right;
-    }
-
-    .footer {
-      padding: 24px 0 8px;
-      color: #64748b;
-      font-size: 11px;
-      text-align: center;
-    }
-
-    @media (max-width: 850px) {
-      body {
-        padding: 16px;
-      }
-
-      .grid {
-        grid-template-columns: 1fr;
-      }
-
-      .panel {
-        padding: 18px;
-      }
-    }
-
-    @media (max-width: 420px) {
-      .metrics {
-        grid-template-columns: 1fr;
-      }
-
-      .metric {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-      }
-
-      .metric-value {
-        margin-top: 0;
-      }
-
-      .chart-wrap {
-        height: 280px;
-      }
+    @media(max-width:420px) {
+      .metrics { grid-template-columns:1fr; }
+      .metric { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+      .metric-value { margin-top:0; }
+      .chart-wrap { height:280px; }
     }
   </style>
 </head>
 
 <body>
-  <main class="app">
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-icon" aria-hidden="true">⚗</div>
-        <div>
-          <p class="eyebrow">Brewing science workspace</p>
-          <h1>A Brewer's Lab</h1>
-        </div>
+<main class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">⚗</div>
+      <div>
+        <p class="eyebrow">Brewing science workspace</p>
+        <h1>A Brewer's Lab</h1>
       </div>
-
-      <div class="status">
-        <span class="status-dot" aria-hidden="true"></span>
-        <span id="app-status">Initializing simulation…</span>
-      </div>
-    </header>
-
-    <p class="intro">
-      Explore botanical extraction settings and estimated wort mass balance.
-      Adjust the experimental inputs to compare the model's predicted outputs.
-    </p>
-
-    <div class="grid">
-      <section class="panel" aria-labelledby="controls-title">
-        <div class="panel-heading">
-          <div>
-            <h2 id="controls-title">Laboratory Control Canvas</h2>
-            <p>Configure the botanical and process conditions.</p>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="adjunct-select">Botanical database target</label>
-          <select id="adjunct-select">
-            <option value="">Loading botanical profiles…</option>
-          </select>
-        </div>
-
-        <div class="section-label">Extraction conditions</div>
-
-        <div class="field">
-          <div class="range-heading">
-            <label for="input-time">Extraction duration</label>
-            <output class="range-value" id="out-time" for="input-time">15 min</output>
-          </div>
-          <input type="range" id="input-time" min="1" max="90" value="15" step="1">
-          <div class="range-hints"><span>1 min</span><span>90 min</span></div>
-        </div>
-
-        <div class="field">
-          <div class="range-heading">
-            <label for="input-temp">Process temperature</label>
-            <output class="range-value" id="out-temp" for="input-temp">85 °C</output>
-          </div>
-          <input type="range" id="input-temp" min="60" max="100" value="85" step="1">
-          <div class="range-hints"><span>60 °C</span><span>100 °C</span></div>
-        </div>
-
-        <div class="field">
-          <div class="range-heading">
-            <label for="input-ph">Fluid pH</label>
-            <output class="range-value" id="out-ph" for="input-ph">5.2</output>
-          </div>
-          <input type="range" id="input-ph" min="4" max="6.5" value="5.2" step="0.1">
-          <div class="range-hints"><span>pH 4.0</span><span>pH 6.5</span></div>
-        </div>
-
-        <div class="section-label">Base wort foundations</div>
-
-        <div class="field">
-          <div class="range-heading">
-            <label for="input-vol">Base volume</label>
-            <output class="range-value" id="out-vol" for="input-vol">20 L</output>
-          </div>
-          <input type="range" id="input-vol" min="10" max="100" value="20" step="1">
-          <div class="range-hints"><span>10 L</span><span>100 L</span></div>
-        </div>
-
-        <div class="field">
-          <div class="range-heading">
-            <label for="input-sg">Base specific gravity</label>
-            <output class="range-value" id="out-sg" for="input-sg">1.055</output>
-          </div>
-          <input type="range" id="input-sg" min="1.030" max="1.100" value="1.055" step="0.001">
-          <div class="range-hints"><span>1.030</span><span>1.100</span></div>
-        </div>
-
-        <div class="field">
-          <div class="range-heading">
-            <label for="input-weight">Botanical dosage</label>
-            <output class="range-value" id="out-weight" for="input-weight">2.0 kg</output>
-          </div>
-          <input type="range" id="input-weight" min="0.1" max="10" value="2" step="0.1">
-          <div class="range-hints"><span>0.1 kg</span><span>10 kg</span></div>
-        </div>
-
-        <div id="error-message" class="notice error" role="alert" hidden></div>
-      </section>
-
-      <section class="panel" aria-labelledby="signature-title">
-        <div class="panel-heading">
-          <div>
-            <h2 id="signature-title">Predicted Molecular Signature</h2>
-            <p>Relative scores generated by the current model.</p>
-          </div>
-        </div>
-
-        <div class="chart-wrap">
-          <canvas id="radarCanvas" role="img"
-            aria-label="Radar chart comparing six modeled sensory dimensions"></canvas>
-          <div id="chart-fallback" class="chart-fallback">
-            The chart library is unavailable. The simulation metrics can still update.
-            Connect to the internet and reload to try loading the chart.
-          </div>
-        </div>
-
-        <div class="metrics" aria-live="polite">
-          <div class="metric">
-            <div class="metric-label">Estimated volume</div>
-            <output class="metric-value" id="metric-vol">—</output>
-          </div>
-          <div class="metric">
-            <div class="metric-label">Blended SG</div>
-            <output class="metric-value" id="metric-sg">—</output>
-          </div>
-          <div class="metric">
-            <div class="metric-label">Oil index</div>
-            <output class="metric-value" id="metric-oils">—</output>
-          </div>
-        </div>
-
-        <div id="pucker-alert" class="alert" role="status" aria-live="polite">
-          <strong>⚠ Tannin extraction warning</strong>
-          The model indicates a potentially high astringency score for this
-          botanical and these process settings. Consider comparing a lower
-          temperature or shorter extraction time.
-        </div>
-
-        <div id="simulation-notice" class="notice">
-          Initializing botanical data and calculation engine…
-        </div>
-
-        <div class="data-table-wrap">
-          <h3>Modeled sensory dimensions</h3>
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Dimension</th>
-                <th scope="col">Relative score</th>
-              </tr>
-            </thead>
-            <tbody id="score-table">
-              <tr><td colspan="2">Waiting for simulation…</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
     </div>
+    <div class="status">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span id="app-status">Initializing simulation…</span>
+    </div>
+  </header>
 
-    <footer class="footer">
-      A Brewer's Lab · Experimental estimates only · Verify results with
-      validated brewing methods and measurements.
-    </footer>
-  </main>
+  <p class="intro">
+    Explore botanical extraction conditions and estimated wort mass balance.
+    Predictions are experimental model outputs, not laboratory measurements.
+  </p>
 
-  <!-- Local project files -->
-  <script src="database.js"></script>
-  <script src="engine.js"></script>
+  <div class="grid">
+    <section class="panel" aria-labelledby="controls-title">
+      <div class="panel-heading">
+        <div>
+          <h2 id="controls-title">Laboratory Control Canvas</h2>
+          <p>Configure the botanical and process conditions.</p>
+        </div>
+      </div>
 
-  <script>
-    "use strict";
+      <div class="field">
+        <label for="adjunct-select">Botanical database target</label>
+        <select id="adjunct-select">
+          <option value="">Loading botanical profiles…</option>
+        </select>
+      </div>
 
-    let radarChart = null;
-    let engine = null;
-    let database = {};
+      <div class="section-label">Extraction conditions</div>
 
-    const $ = (id) => document.getElementById(id);
+      <div class="field">
+        <div class="range-heading">
+          <label for="input-time">Extraction duration</label>
+          <output class="range-value" id="out-time" for="input-time">15 min</output>
+        </div>
+        <input type="range" id="input-time" min="1" max="90" value="15" step="1">
+        <div class="range-hints"><span>1 min</span><span>90 min</span></div>
+      </div>
 
-    const DIMENSIONS = [
-      "Esters (Fruit)",
-      "Phenolics (Spice)",
-      "Terpenes (Aroma)",
-      "Acidity (Sharp)",
-      "Tannic (Mouthfeel)",
-      "Sweetness / Body"
-    ];
+      <div class="field">
+        <div class="range-heading">
+          <label for="input-temp">Process temperature</label>
+          <output class="range-value" id="out-temp" for="input-temp">85 °C</output>
+        </div>
+        <input type="range" id="input-temp" min="60" max="100" value="85" step="1">
+        <div class="range-hints"><span>60 °C</span><span>100 °C</span></div>
+      </div>
 
-    const INPUTS = [
-      "input-time",
-      "input-temp",
-      "input-ph",
-      "input-vol",
-      "input-sg",
-      "input-weight"
-    ];
+      <div class="field">
+        <div class="range-heading">
+          <label for="input-ph">Fluid pH</label>
+          <output class="range-value" id="out-ph" for="input-ph">5.2</output>
+        </div>
+        <input type="range" id="input-ph" min="4" max="6.5" value="5.2" step="0.1">
+        <div class="range-hints"><span>pH 4.0</span><span>pH 6.5</span></div>
+      </div>
 
-    function setAppStatus(message) {
-      $("app-status").textContent = message;
-    }
+      <div class="section-label">Base wort foundations</div>
 
-    function showError(message) {
-      const box = $("error-message");
-      box.textContent = message;
-      box.hidden = false;
-      box.style.display = "block";
-      $("simulation-notice").textContent = message;
-      $("simulation-notice").className = "notice error";
-      setAppStatus("Needs attention");
-    }
+      <div class="field">
+        <div class="range-heading">
+          <label for="input-vol">Base volume</label>
+          <output class="range-value" id="out-vol" for="input-vol">20 L</output>
+        </div>
+        <input type="range" id="input-vol" min="10" max="100" value="20" step="1">
+        <div class="range-hints"><span>10 L</span><span>100 L</span></div>
+      </div>
 
-    function clearError() {
-      $("error-message").textContent = "";
-      $("error-message").hidden = true;
-      $("error-message").style.display = "none";
-    }
+      <div class="field">
+        <div class="range-heading">
+          <label for="input-sg">Base specific gravity</label>
+          <output class="range-value" id="out-sg" for="input-sg">1.055</output>
+        </div>
+        <input type="range" id="input-sg" min="1.030" max="1.100" value="1.055" step="0.001">
+        <div class="range-hints"><span>1.030</span><span>1.100</span></div>
+      </div>
 
-    function clamp(value, min, max) {
-      return Math.max(min, Math.min(max, value));
-    }
+      <div class="field">
+        <div class="range-heading">
+          <label for="input-weight">Botanical dosage</label>
+          <output class="range-value" id="out-weight" for="input-weight">2.0 kg</output>
+        </div>
+        <input type="range" id="input-weight" min="0.1" max="10" value="2" step="0.1">
+        <div class="range-hints"><span>0.1 kg</span><span>10 kg</span></div>
+      </div>
 
-    function finiteNumber(value, label) {
-      const number = Number(value);
-      if (!Number.isFinite(number)) {
-        throw new Error("Invalid numeric value for " + label + ".");
-      }
-      return number;
-    }
+      <div id="error-message" class="notice error" role="alert" hidden></div>
+    </section>
 
-    function populateBotanicalSelect() {
-      const select = $("adjunct-select");
-      const keys = Object.keys(database).sort((a, b) => {
-        const nameA = String(database[a].name || a);
-        const nameB = String(database[b].name || b);
-        return nameA.localeCompare(nameB);
-      });
+    <section class="panel" aria-labelledby="signature-title">
+      <div class="panel-heading">
+        <div>
+          <h2 id="signature-title">Predicted Molecular Signature</h2>
+          <p>Available estimates are separated from missing chemical data.</p>
+        </div>
+      </div>
 
-      select.replaceChildren();
+      <div class="chart-wrap">
+        <canvas id="radarCanvas" role="img"
+          aria-label="Radar chart of available experimental sensory estimates"></canvas>
+        <div id="chart-fallback" class="chart-fallback">
+          Chart.js is unavailable. The calculation outputs can still update.
+        </div>
+      </div>
 
-      if (keys.length === 0) {
-        throw new Error("No botanical profiles were found in database.js.");
-      }
+      <div class="metrics" aria-live="polite">
+        <div class="metric">
+          <div class="metric-label">Estimated volume</div>
+          <output class="metric-value" id="metric-vol">—</output>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Blended SG</div>
+          <output class="metric-value" id="metric-sg">—</output>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Oil index</div>
+          <output class="metric-value" id="metric-oils">Unknown</output>
+        </div>
+      </div>
 
-      for (const key of keys) {
-        const item = database[key];
-        const option = document.createElement("option");
-        option.value = key;
-        option.textContent = item.name || key;
-        select.appendChild(option);
-      }
+      <div id="pucker-alert" class="alert" role="status" aria-live="polite">
+        <strong>⚠ Relative tannin index warning</strong>
+        The experimental model indicates a potentially high tannin index.
+        This is not a validated sensory or safety threshold.
+      </div>
 
-      // Select the first available profile deterministically.
-      select.value = keys[0];
-    }
+      <div id="simulation-notice" class="notice">
+        Initializing botanical data and calculation engine…
+      </div>
 
-    function initializeChart() {
-      if (typeof window.Chart !== "function") {
-        $("chart-fallback").style.display = "grid";
-        return;
-      }
+      <div class="data-table-wrap">
+        <h3>Modeled sensory dimensions</h3>
+        <table>
+          <thead>
+            <tr><th scope="col">Dimension</th><th scope="col">Output</th></tr>
+          </thead>
+          <tbody id="score-table">
+            <tr><td colspan="2">Waiting for simulation…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
 
-      const context = $("radarCanvas").getContext("2d");
+  <footer class="footer">
+    A Brewer's Lab · Experimental estimates only · Verify results with
+    validated brewing methods and measurements.
+  </footer>
+</main>
 
-      if (!context) {
-        $("chart-fallback").style.display = "grid";
-        return;
-      }
+<script src="database.js"></script>
+<script src="engine.js"></script>
+<script>
+"use strict";
 
-      radarChart = new Chart(context, {
-        type: "radar",
-        data: {
-          labels: DIMENSIONS,
-          datasets: [{
-            label: "Relative modeled score",
-            data: [0, 0, 0, 0, 0, 0],
-            backgroundColor: "rgba(6, 182, 212, 0.17)",
-            borderColor: "#06b6d4",
-            pointBackgroundColor: "#67e8f9",
-            pointBorderColor: "#0e1420",
-            pointRadius: 4,
-            borderWidth: 2
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: { duration: 180 },
-          scales: {
-            r: {
-              min: 0,
-              max: 10,
-              beginAtZero: true,
-              grid: { color: "#26344a" },
-              angleLines: { color: "#26344a" },
-              pointLabels: {
-                color: "#cbd5e1",
-                font: { size: 10 }
-              },
-              ticks: {
-                display: false,
-                stepSize: 2
-              }
-            }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (context) =>
-                  " Relative score: " +
-                  Number(context.raw).toFixed(2) +
-                  " / 10"
-              }
-            }
+let radarChart = null;
+let engine = null;
+let database = {};
+
+const $ = id => document.getElementById(id);
+
+const DIMENSIONS = [
+  "Esters (Fruit)",
+  "Phenolics (Spice)",
+  "Terpenes (Aroma)",
+  "Acidity (Sharp)",
+  "Tannic (Mouthfeel)",
+  "Sweetness / Body"
+];
+
+const INPUTS = [
+  "input-time", "input-temp", "input-ph",
+  "input-vol", "input-sg", "input-weight"
+];
+
+function setAppStatus(message) {
+  $("app-status").textContent = message;
+}
+
+function showError(message) {
+  const box = $("error-message");
+  box.textContent = message;
+  box.hidden = false;
+  box.style.display = "block";
+  $("simulation-notice").textContent = message;
+  $("simulation-notice").className = "notice error";
+  setAppStatus("Needs attention");
+}
+
+function clearError() {
+  $("error-message").textContent = "";
+  $("error-message").hidden = true;
+  $("error-message").style.display = "none";
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+/* Do not turn null or an empty field into a measured zero. */
+function readNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function firstNumber(...values) {
+  for (const value of values) {
+    const number = readNumber(value);
+    if (number !== null) return number;
+  }
+  return null;
+}
+
+function requireNumber(value, label) {
+  const number = readNumber(value);
+  if (number === null) throw new Error("Missing or invalid numeric data: " + label);
+  return number;
+}
+
+function getIngredientValue(item, currentName, legacyName) {
+  return firstNumber(item[currentName], item[legacyName]);
+}
+
+function getAcidValue(item, acidName, legacyName) {
+  return firstNumber(
+    item.acidsMgPer100g && item.acidsMgPer100g[acidName],
+    item[legacyName]
+  );
+}
+
+function getKnownCompounds(item) {
+  const compounds = item.compounds || item.oils || {};
+  return Object.entries(compounds).filter(([, value]) => {
+    return readNumber(value) !== null && readNumber(value) >= 0;
+  });
+}
+
+function populateBotanicalSelect() {
+  const select = $("adjunct-select");
+  const keys = Object.keys(database).sort((a, b) => {
+    return String(database[a].name || a).localeCompare(
+      String(database[b].name || b)
+    );
+  });
+
+  select.replaceChildren();
+
+  if (!keys.length) {
+    throw new Error("No botanical profiles were found in database.js.");
+  }
+
+  for (const key of keys) {
+    const item = database[key];
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = item.name || key;
+    select.appendChild(option);
+  }
+
+  select.value = keys[0];
+}
+
+function initializeChart() {
+  if (typeof window.Chart !== "function") {
+    $("chart-fallback").style.display = "grid";
+    return;
+  }
+
+  const context = $("radarCanvas").getContext("2d");
+  if (!context) {
+    $("chart-fallback").style.display = "grid";
+    return;
+  }
+
+  radarChart = new Chart(context, {
+    type: "radar",
+    data: {
+      labels: DIMENSIONS,
+      datasets: [{
+        label: "Experimental estimate",
+        data: [null, null, null, null, null, null],
+        backgroundColor: "rgba(6,182,212,0.17)",
+        borderColor: "#06b6d4",
+        pointBackgroundColor: "#67e8f9",
+        pointBorderColor: "#0e1420",
+        pointRadius: 4,
+        spanGaps: false,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 180 },
+      scales: {
+        r: {
+          min: 0,
+          max: 10,
+          grid: { color: "#26344a" },
+          angleLines: { color: "#26344a" },
+          pointLabels: { color: "#cbd5e1", font: { size: 10 } },
+          ticks: { display: false, stepSize: 2 }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: context => context.raw == null
+              ? " No supported estimate available"
+              : " Relative model score: " + Number(context.raw).toFixed(2) + " / 10"
           }
         }
-      });
-
-      $("chart-fallback").style.display = "none";
-    }
-
-    function updateRangeLabels(values) {
-      $("out-time").textContent = values.time + " min";
-      $("out-temp").textContent = values.temp + " °C";
-      $("out-ph").textContent = values.ph.toFixed(1);
-      $("out-vol").textContent = values.baseVol + " L";
-      $("out-sg").textContent = values.baseSG.toFixed(3);
-      $("out-weight").textContent = values.weight.toFixed(1) + " kg";
-    }
-
-    function getSensoryScores(item, values, massBalance, extractedTannins, remainingOils) {
-      const oilValues = Object.values(item.oils || {}).map((value) =>
-        finiteNumber(value, "botanical oil profile")
-      );
-
-      const totalOilProfile = oilValues.reduce((sum, value) => sum + value, 0);
-
-      const brix = finiteNumber(item.brix, "botanical Brix");
-      const citric = finiteNumber(
-        item.citric_acid_mg_100g || 0,
-        "citric acid profile"
-      );
-      const malic = finiteNumber(
-        item.malic_acid_mg_100g || 0,
-        "malic acid profile"
-      );
-      const unfermentable = finiteNumber(
-        item.unfermentable_pct || 0,
-        "unfermentable percentage"
-      );
-
-      const tannicScore = clamp(extractedTannins / 180, 0, 10);
-      const esterScore = clamp(
-        (brix * values.weight / 5) + (remainingOils * 0.4),
-        0, 10
-      );
-      const phenolicScore = clamp(
-        (extractedTannins * 0.0015) + (values.temp > 92 ? 2 : 0),
-        0, 10
-      );
-      const terpeneScore = clamp(remainingOils * 1.8, 0, 10);
-      const acidScore = clamp(
-        ((citric + malic) * values.weight / 800) + (6 - values.ph),
-        0, 10
-      );
-      const sweetnessScore = clamp(
-        ((massBalance.blendedSG - 1) * 140) + (unfermentable / 8),
-        0, 10
-      );
-
-      return {
-        scores: [
-          esterScore,
-          phenolicScore,
-          terpeneScore,
-          acidScore,
-          tannicScore,
-          sweetnessScore
-        ],
-        totalOilProfile
-      };
-    }
-
-    function updateScoreTable(scores) {
-      const tbody = $("score-table");
-      tbody.replaceChildren();
-
-      DIMENSIONS.forEach((dimension, index) => {
-        const row = document.createElement("tr");
-        const nameCell = document.createElement("td");
-        const scoreCell = document.createElement("td");
-
-        nameCell.textContent = dimension;
-        scoreCell.textContent = scores[index].toFixed(2) + " / 10";
-
-        row.append(nameCell, scoreCell);
-        tbody.appendChild(row);
-      });
-    }
-
-    function runSimulation() {
-      try {
-        clearError();
-
-        if (!engine || Object.keys(database).length === 0) {
-          throw new Error(
-            "The calculation engine or botanical database has not loaded."
-          );
-        }
-
-        const id = $("adjunct-select").value;
-        const item = database[id];
-
-        if (!item) {
-          throw new Error("Select a valid botanical profile.");
-        }
-
-        const values = {
-          time: finiteNumber($("input-time").value, "extraction duration"),
-          temp: finiteNumber($("input-temp").value, "temperature"),
-          ph: finiteNumber($("input-ph").value, "pH"),
-          baseVol: finiteNumber($("input-vol").value, "base volume"),
-          baseSG: finiteNumber($("input-sg").value, "base specific gravity"),
-          weight: finiteNumber($("input-weight").value, "botanical dosage")
-        };
-
-        updateRangeLabels(values);
-
-        const requiredFields = [
-          "moisture_pct",
-          "brix",
-          "base_tannin"
-        ];
-
-        for (const field of requiredFields) {
-          if (!Number.isFinite(Number(item[field]))) {
-            throw new Error(
-              "The selected botanical profile is missing valid data: " + field
-            );
-          }
-        }
-
-        if (typeof engine.simulateMassBalance !== "function" ||
-            typeof engine.calculateTanninExtraction !== "function" ||
-            typeof engine.calculateOilPreservation !== "function") {
-          throw new Error(
-            "engine.js does not expose all three required calculation methods."
-          );
-        }
-
-        const massBalance = engine.simulateMassBalance(
-          values.baseVol,
-          values.baseSG,
-          values.weight,
-          Number(item.moisture_pct),
-          Number(item.brix)
-        );
-
-        const extractedTannins = engine.calculateTanninExtraction(
-          Number(item.base_tannin),
-          values.weight,
-          values.temp,
-          values.time,
-          values.ph
-        );
-
-        const initialOilSum = Object.values(item.oils || {}).reduce(
-          (sum, value) => sum + finiteNumber(value, "oil profile"),
-          0
-        );
-
-        const remainingOils = engine.calculateOilPreservation(
-          initialOilSum,
-          values.weight,
-          values.temp,
-          values.time
-        );
-
-        if (!Number.isFinite(massBalance.finalVolumeL) ||
-            !Number.isFinite(massBalance.blendedSG) ||
-            !Number.isFinite(extractedTannins) ||
-            !Number.isFinite(remainingOils)) {
-          throw new Error(
-            "The calculation engine returned an invalid result. Check engine.js."
-          );
-        }
-
-        $("metric-vol").textContent =
-          massBalance.finalVolumeL.toFixed(2) + " L";
-        $("metric-sg").textContent =
-          massBalance.blendedSG.toFixed(3);
-        $("metric-oils").textContent =
-          remainingOils.toFixed(2);
-
-        const sensory = getSensoryScores(
-          item,
-          values,
-          massBalance,
-          extractedTannins,
-          remainingOils
-        );
-
-        if (radarChart) {
-          radarChart.data.datasets[0].data = sensory.scores;
-          radarChart.update();
-        }
-
-        updateScoreTable(sensory.scores);
-
-        const tannicScore = sensory.scores[4];
-        const condensedRatio = Number(item.condensed_tannin_ratio || 0);
-
-        $("pucker-alert").style.display =
-          tannicScore > 6.5 && condensedRatio > 0.5
-            ? "block"
-            : "none";
-
-        $("simulation-notice").className = "notice success";
-        $("simulation-notice").textContent =
-          "Simulation updated for " + (item.name || id) +
-          ". Scores are model estimates, not laboratory measurements.";
-
-        setAppStatus(
-          radarChart ? "Simulation ready" : "Simulation ready · Chart offline"
-        );
-      } catch (error) {
-        console.error("Simulation error:", error);
-        showError(error.message || "An unexpected simulation error occurred.");
       }
     }
+  });
 
-    function initializeApp() {
-      try {
-        if (typeof window.BrewingKineticEngine !== "function") {
-          throw new Error(
-            "BrewingKineticEngine was not found. Check that engine.js loads correctly."
-          );
-        }
+  $("chart-fallback").style.display = "none";
+}
 
-        if (!window.BOTANICAL_DATABASE ||
-            typeof window.BOTANICAL_DATABASE !== "object") {
-          throw new Error(
-            "BOTANICAL_DATABASE was not found. Check that database.js loads correctly."
-          );
-        }
+function readInputs() {
+  return {
+    time: requireNumber($("input-time").value, "extraction duration"),
+    temp: requireNumber($("input-temp").value, "temperature"),
+    ph: requireNumber($("input-ph").value, "pH"),
+    baseVol: requireNumber($("input-vol").value, "base volume"),
+    baseSG: requireNumber($("input-sg").value, "base specific gravity"),
+    weight: requireNumber($("input-weight").value, "botanical dosage")
+  };
+}
 
-        engine = new window.BrewingKineticEngine();
-        database = window.BOTANICAL_DATABASE;
+function updateRangeLabels(values) {
+  $("out-time").textContent = values.time + " min";
+  $("out-temp").textContent = values.temp + " °C";
+  $("out-ph").textContent = values.ph.toFixed(1);
+  $("out-vol").textContent = values.baseVol + " L";
+  $("out-sg").textContent = values.baseSG.toFixed(3);
+  $("out-weight").textContent = values.weight.toFixed(1) + " kg";
+}
 
-        populateBotanicalSelect();
-        initializeChart();
+/*
+ * Scores are deliberately partial.
+ * Null means that the database lacks the evidence needed to calculate that
+ * dimension; it must not be plotted or displayed as zero.
+ */
+function getSensoryScores(item, values, massBalance, extractedTannins, remainingOils) {
+  const scores = Array(6).fill(null);
 
-        for (const id of INPUTS) {
-          $(id).addEventListener("input", runSimulation);
-        }
+  const knownCompounds = getKnownCompounds(item);
+  const knownOilNames = new Set([
+    "linalool", "geraniol", "limonene", "myrcene", "pinene",
+    "terpinolene", "betaCaryophyllene", "ethylButyrate",
+    "hexylButyrate", "hexylAcetate"
+  ]);
 
-        $("adjunct-select").addEventListener("change", runSimulation);
+  const knownAromaCompounds = knownCompounds.filter(([name]) =>
+    knownOilNames.has(name)
+  );
 
-        runSimulation();
-      } catch (error) {
-        console.error("Application initialization error:", error);
-        showError(
-          error.message ||
-          "The application could not initialize. Check the browser console."
-        );
-      }
+  const brix = readNumber(item.brix);
+  const tanninIndex = getIngredientValue(item, "tanninIndex", "base_tannin");
+  const citric = getAcidValue(item, "citric", "citric_acid_mg_100g");
+  const malic = getAcidValue(item, "malic", "malic_acid_mg_100g");
+  const unfermentable = getIngredientValue(
+    item, "unfermentablePct", "unfermentable_pct"
+  );
+
+  // A relative tannin index only: it is not a measured concentration.
+  if (tanninIndex !== null && Number.isFinite(extractedTannins)) {
+    scores[4] = clamp(extractedTannins / 180, 0, 10);
+    scores[1] = clamp(extractedTannins * 0.0015, 0, 10);
+  }
+
+  // Do not infer fruit ester intensity from Brix alone.
+  // This score needs measured aroma-compound data, which starter records lack.
+  if (knownAromaCompounds.length && Number.isFinite(remainingOils)) {
+    const measuredProfileTotal = knownAromaCompounds.reduce(
+      (sum, [, value]) => sum + value, 0
+    );
+    scores[2] = clamp(remainingOils * 1.8, 0, 10);
+    if (measuredProfileTotal > 0) {
+      scores[0] = clamp(remainingOils * 0.4, 0, 10);
+    }
+  }
+
+  // Acid-load proxy, not a pH prediction or a validated sourness model.
+  if (citric !== null && malic !== null) {
+    scores[3] = clamp(
+      ((citric + malic) * values.weight / 800) + (6 - values.ph),
+      0, 10
+    );
+  }
+
+  // Approximate body proxy, only when the relevant fields are present.
+  if (brix !== null && unfermentable !== null &&
+      Number.isFinite(massBalance.blendedSG)) {
+    scores[5] = clamp(
+      ((massBalance.blendedSG - 1) * 140) + (unfermentable / 8),
+      0, 10
+    );
+  }
+
+  return scores;
+}
+
+function updateScoreTable(scores) {
+  const tbody = $("score-table");
+  tbody.replaceChildren();
+
+  DIMENSIONS.forEach((dimension, index) => {
+    const row = document.createElement("tr");
+    const nameCell = document.createElement("td");
+    const scoreCell = document.createElement("td");
+
+    nameCell.textContent = dimension;
+    scoreCell.textContent = scores[index] === null
+      ? "Unavailable — insufficient chemical data"
+      : scores[index].toFixed(2) + " / 10 (experimental estimate)";
+
+    row.append(nameCell, scoreCell);
+    tbody.appendChild(row);
+  });
+}
+
+function runSimulation() {
+  try {
+    clearError();
+
+    if (!engine || !Object.keys(database).length) {
+      throw new Error("The calculation engine or botanical database has not loaded.");
     }
 
-    document.addEventListener("DOMContentLoaded", initializeApp);
-  </script>
+    const id = $("adjunct-select").value;
+    const item = database[id];
+    if (!item) throw new Error("Select a valid botanical profile.");
+
+    const values = readInputs();
+    updateRangeLabels(values);
+
+    const moisture = getIngredientValue(item, "moisturePct", "moisture_pct");
+    const brix = readNumber(item.brix);
+    const tannin = getIngredientValue(item, "tanninIndex", "base_tannin");
+
+    if (moisture === null || brix === null || tannin === null) {
+      throw new Error(
+        "This botanical is missing moisture, Brix, or tannin-index data required by the current engine."
+      );
+    }
+
+    if (typeof engine.simulateMassBalance !== "function" ||
+        typeof engine.calculateTanninExtraction !== "function" ||
+        typeof engine.calculateOilPreservation !== "function") {
+      throw new Error("The engine is missing one or more required calculation methods.");
+    }
+
+    const massBalance = engine.simulateMassBalance(
+      values.baseVol, values.baseSG, values.weight, moisture, brix
+    );
+
+    const extractedTannins = engine.calculateTanninExtraction(
+      tannin, values.weight, values.temp, values.time, values.ph
+    );
+
+    const knownCompounds = getKnownCompounds(item);
+    const oilCompounds = knownCompounds.filter(([name]) =>
+      /linalool|geraniol|limonene|myrcene|pinene|terpinolene|caryophyllene|butyrate|acetate/i.test(name)
+    );
+
+    let remainingOils = null;
+    if (oilCompounds.length) {
+      const initialOilIndex = oilCompounds.reduce(
+        (sum, [, value]) => sum + value, 0
+      );
+      remainingOils = engine.calculateOilPreservation(
+        initialOilIndex, values.weight, values.temp, values.time
+      );
+    }
+
+    if (!Number.isFinite(massBalance.finalVolumeL) ||
+        !Number.isFinite(massBalance.blendedSG) ||
+        !Number.isFinite(extractedTannins) ||
+        (remainingOils !== null && !Number.isFinite(remainingOils))) {
+      throw new Error("The engine returned an invalid result. Check engine.js.");
+    }
+
+    $("metric-vol").textContent = massBalance.finalVolumeL.toFixed(2) + " L";
+    $("metric-sg").textContent = massBalance.blendedSG.toFixed(3);
+    $("metric-oils").textContent = remainingOils === null
+      ? "Unknown"
+      : remainingOils.toFixed(2) + " (relative index)";
+
+    const scores = getSensoryScores(
+      item, values, massBalance, extractedTannins, remainingOils
+    );
+
+    if (radarChart) {
+      radarChart.data.datasets[0].data = scores;
+      radarChart.update();
+    }
+    updateScoreTable(scores);
+
+    const ratio = getIngredientValue(
+      item, "condensedTanninRatio", "condensed_tannin_ratio"
+    );
+    $("pucker-alert").style.display =
+      scores[4] !== null && scores[4] > 6.5 && ratio !== null && ratio > 0.5
+        ? "block" : "none";
+
+    const evidenceLevel = item.evidence && item.evidence.level
+      ? item.evidence.level.replaceAll("_", " ")
+      : "unspecified evidence level";
+
+    const unknownOil = remainingOils === null;
+    $("simulation-notice").className = unknownOil ? "notice warning" : "notice success";
+    $("simulation-notice").textContent =
+      "Simulation updated for " + (item.name || id) +
+      ". Profile evidence: " + evidenceLevel + ". " +
+      (unknownOil
+        ? "Oil concentrations are not available, so oil-dependent outputs remain unknown. "
+        : "Oil output is a relative model index, not a measured concentration. ") +
+      "Mass balance and sensory outputs are approximate and require experimental validation.";
+
+    setAppStatus(radarChart
+      ? "Simulation ready · Estimates only"
+      : "Simulation ready · Chart offline");
+  } catch (error) {
+    console.error("Simulation error:", error);
+    showError(error.message || "An unexpected simulation error occurred.");
+  }
+}
+
+function initializeApp() {
+  try {
+    if (typeof window.BrewingKineticEngine !== "function") {
+      throw new Error("BrewingKineticEngine was not found. Check engine.js.");
+    }
+    if (!window.BOTANICAL_DATABASE ||
+        typeof window.BOTANICAL_DATABASE !== "object") {
+      throw new Error("BOTANICAL_DATABASE was not found. Check database.js.");
+    }
+
+    database = window.BOTANICAL_DATABASE;
+    engine = new window.BrewingKineticEngine();
+
+    populateBotanicalSelect();
+    initializeChart();
+
+    INPUTS.forEach(id => $(id).addEventListener("input", runSimulation));
+    $("adjunct-select").addEventListener("change", runSimulation);
+
+    runSimulation();
+  } catch (error) {
+    console.error("Application initialization error:", error);
+    showError(error.message || "The application could not initialize.");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", initializeApp);
+</script>
 </body>
 </html>
+
+
+
+
