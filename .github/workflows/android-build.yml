@@ -24,11 +24,11 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Setup Gradle Caching Workaround
-      run: |
-        mkdir -p ~/.gradle
-        echo "org.gradle.daemon=false" >> ~/.gradle/gradle.properties
-        echo "org.gradle.logging.level=lifecycle" >> ~/.gradle/gradle.properties
+    - name: Set up Gradle and Caching Environment
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: 8.2.1
+        cache-encryption-key: ${{ secrets.GRADLE_CACHE_ENCRYPTION_KEY }} # Optional but handles secure runners safely
 
     - name: Restructure Assets & Initialize Capacitor Workspace
       run: |
@@ -63,7 +63,7 @@ jobs:
       run: |
         cd android
         chmod +x gradlew
-        ./gradlew assembleDebug --no-daemon --stacktrace
+        ./gradlew assembleDebug --no-daemon --no-build-cache --stacktrace
 
     - name: Upload Finished APK Asset
       uses: actions/upload-artifact@v4
