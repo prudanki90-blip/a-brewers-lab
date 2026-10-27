@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predictive Molecular Recipe Engine</title>
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        :root {
+            --bg: #0b0f17; --panel: #131a26; --border: #222f44;
+            --cyan: #06b6d4; --amber: #f59e0b; --rose: #f43f5e; --text: #f1f5f9;
+        }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 25px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 20px; }
+        .panel { background: var(--panel); border: 1px solid var(--border); padding: 25px; border-radius: 12px; }
+        h1, h2 { color: var(--cyan); margin-top: 0; }
+        label { display: block; font-size: 13px; color: #94a3b8; margin: 12px 0 4px 0; }
+        .row { display: grid; grid-template-columns: 1fr 90px; gap: 15px; align-items: center; }
+        input[type="range"], select { width: 100%; background: #0b0f17; border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 6px; }
+        .display { text-align: right; font-family: monospace; color: var(--cyan); }
+        .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
+        .card { background: #0b0f17; border: 1px solid var(--border); padding: 12px; border-radius: 6px; text-align: center; }
+        .card div { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+        .card span { font-size: 18px; font-family: monospace; font-weight: bold; }
+        .alert { background: rgba(244, 63, 94, 0.1); border: 1px solid var(--rose); padding: 12px; border-radius: 6px; margin-top: 15px; display: none; color: var(--rose); }
+    </style>
+</head>
+<body>
+
+    <h1>Predictive Molecular Recipe Engine</h1>
+    <p>Simulate flavor vectors and thermodynamicextractions before scaling or purchasing ingredients.</p>
+
+    <div class="grid">
+        <div class="panel">
+            <h2>Laboratory Control Canvas</h2>
+            
+            <label>Select Botanical Database Target</label>
+            <select id="adjunct-select" onchange="runSimulation()"></select>
+
+            <div class="row"><div class="control-block"><label>Extraction Step Duration</label><input type="range" id="input-time" min="1" max="90" value="15" oninput="runSimulation()"></div><span class="display" id="out-time">15 min</span></div>
+            <div class="row"><div class="control-block"><label>Kinetic Process Temperature (°C)</label><input type="range" id="input-temp" min="60" max="100" value="85" oninput="runSimulation()"></div><span class="display" id="out-temp">85 °C</span></div>
+            <div class="row"><div class="control-block"><label>System Matrix Fluid pH</label><input type="range" id="input-ph" min="4.0" max="6.5" value="5.2" step="0.1" oninput="runSimulation()"></div><span class="display" id="out-ph">5.2</span></div>
+            
+            <h3 style="color:var(--amber); margin-top:20px; font-size:16px;">Base Wort Foundations</h3>
+            <div class="row"><div class="control-block"><label>Base Volume (Liters)</label><input type="range" id="input-vol" min="10" max="100" value="20" oninput="runSimulation()"></div><span class="display" id="out-vol">20 L</span></div>
+            <div class="row"><div class="control-block"><label>Base Specific Gravity (SG)</label><input type="range" id="input-sg" min="1.030" max="1.100" value="1.055" step="0.001" oninput="runSimulation()"></div><span class="display" id="out-sg">1.055</span></div>
+            <div class="row"><div class="control-block"><label>Adjunct Mass Dosage (kg)</label><input type="range" id="input-weight" min="0.1" max="10" value="2" step="0.1" oninput="runSimulation()"></div><span class="display" id="out-weight">2.0 kg</span></div>
+        </div>
+
+        <div class="panel">
+            <h2>Predictive Molecular Signature</h2>
+            <div style="height:280px; position:relative; background:#0b0f17; padding:15px; border-radius:8px; border:1px solid var(--border);">
+                <canvas id="radarCanvas"></canvas>
+            </div>
+
+            <div class="metrics">
+                <div class="card"><div>Extended Vol</div><span id="metric-vol">-</span></div>
+                <div class="card"><div>Blended SG</div><span id="metric-sg">-</span></div>
+                <div class="card"><div>Aroma Oils</div><span id="metric-oils">-</span></div>
+            </div>
+
+            <div id="pucker-alert" class="alert">
+                <strong>⚠️ Harsh Tannin Overload Warning:</strong> High temperatures combined with structural condensed tannins have compromised mouthfeel smoothness. Reduce temperature below 85°C.
+            </div>
+        </div>
+    </div>
+
+    <!-- Wire Up Database and Physics Scripts -->
+    <script src="database.js"></script>
+    <script src="engine.js"></script>
+    <script>
+        let radarChart;
+        const engine = new BrewingKineticEngine();
+
+        window.onload = function() {
+            const select = document.getElementById('adjunct-select');
+            for (let key in window.BOTANICAL_DATABASE) {
+                let opt = document.createElement('option');
+                opt.value = key;
+                opt.innerText = window.BOTANICAL_DATABASE[key].name;
+                select.appendChild(opt);
+            }
+
+            const ctx = document.getElementById('radarCanvas').getContext('2d');
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Esters (Fruit)', 'Phenolics (Spice)', 'Terpenes (Aroma)', 'Acidity (Sharp)', 'Tannic (Mouthfeel)', 'Sweetness / Body'],
+                    datasets: [{
+                        data:,
+                        backgroundColor: 'rgba(6, 182, 212, 0.15)', borderColor: '#06b6d4', borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { r: { grid: { color: '#222f44' }, angleLines: { color: '#222f44' }, pointLabels: { color: '#94a3b8' }, ticks: { display: false }, min: 0, max: 10 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            runSimulation();
+        };
+
+        function runSimulation() {
+            const id = document.getElementById('adjunct-select').value;
+            const item = window.BOTANICAL_DATABASE[id];
+            
+            const time = parseFloat(document.getElementById('input-time').value);
+            const temp = parseFloat(document.getElementById('input-temp').value);
+            const ph = parseFloat(document.getElementById('input-ph').value);
+            const baseVol = parseFloat(document.getElementById('input-vol').value);
+            const baseSG = parseFloat(document.getElementById('input-sg').value);
+            const weight = parseFloat(document.getElementById('input-weight').value);
+
+            document.getElementById('out-time').innerText = time + " min";
+            document.getElementById('out-temp').innerText = temp + " °C";
+            document.getElementById('out-ph').innerText = ph.toFixed(1);
+            document.getElementById('out-vol').innerText = baseVol + " L";
+            document.getElementById('out-sg').innerText = baseSG.toFixed(3);
+            document.getElementById('out-weight').innerText = weight.toFixed(1) + " kg";
+
+            // Run Kinetic Engines
+            const mb = engine.simulateMassBalance(baseVol, baseSG, weight, item.moisture_pct, item.brix);
+            const extractedTannins = engine.calculateTanninExtraction(item.base_tannin, weight, temp, time, ph);
+            
+            let initialOilSum = 0;
+            for(let oil in item.oils) { initialOilSum += item.oils[oil]; }
+            const remainingOils = engine.calculateOilPreservation(initialOilSum, weight, temp, time);
+
+            // Update Analytic Metrics
+            document.getElementById('metric-vol').innerText = mb.finalVolumeL.toFixed(1) + "L";
+            document.getElementById('metric-sg').innerText = mb.blendedSG.toFixed(3);
+            document.getElementById('metric-oils').innerText = remainingOils.toFixed(2) + " ppm";
+
+            // Evaluate Astringency Risk
+            const tannicScore = Math.min(10, (extractedTannins / 180));
+            document.getElementById('pucker-alert').style.display = (tannicScore > 6.5 && item.condensed_tannin_ratio > 0.5) ? 'block' : 'none';
+
+            // Normalize Multi-Tier Scores onto 1-10 Sensory Spectrum
+            const esterScore = Math.min(10, (item.brix * weight / 5) + (remainingOils * 0.4));
+            const phenolicScore = Math.min(10, (extractedTannins * 0.0015) + (temp > 92 ? 2 : 0));
+            const terpeneScore = Math.min(10, remainingOils * 1.8);
+            const acidScore = Math.min(10, ((item.citric_acid_mg_100g + item.malic_acid_mg_100g) * weight / 800) + (6.0 - ph));
+            const sweetnessScore = Math.min(10, ((mb.blendedSG - 1.0) * 140) + (item.unfermentable_pct / 8));
+
+            radarChart.data.datasets[0].data = [esterScore, phenolicScore, terpeneScore, acidScore, tannicScore, sweetnessScore];
+            radarChart.update();
+        }
+    </script>
+</body>
+</html>
