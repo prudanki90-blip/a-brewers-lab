@@ -42,6 +42,7 @@ jobs:
           cp index.html www/
           cp engine.js www/
           cp database.js www/
+          cp data-quality.js www/
 
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
