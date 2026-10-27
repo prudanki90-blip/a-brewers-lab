@@ -3,7 +3,7 @@ name: Build Android APK
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Allows you to trigger the build manually anytime
+  workflow_dispatch:
 
 jobs:
   build:
@@ -18,27 +18,32 @@ jobs:
       with:
         node-version: 18
 
-    - name: Set up Java JDK
+    - name: Set up Java JDK 17
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Install Dependencies
+    - name: Install Dependencies & Initialize Capacitor
       run: |
         npm init -y
-        npm install @capacitor/core @capacitor/cli
-        npm install @capacitor/android
-        npx cap init "Predictive Canvas" "com.lab.molecularbrew" --web-dir=.
-
-    - name: Add Android Platform Framework
-      run: |
+        npm install @capacitor/core @capacitor/cli @capacitor/android
+        # Create minimal capacitor.config.json pointing webDir to current folder
+        cat << 'EOF' > capacitor.config.json
+        {
+          "appId": "com.lab.molecularbrew",
+          "appName": "Predictive Canvas",
+          "webDir": "."
+        }
+        EOF
         npx cap add android
-        npx cap sync
+        npx cap sync android
 
-    - name: Compile Unsigned Android APK
+    - name: Compile Android APK with Stacktrace
       run: |
-        cd android && ./gradlew assembleDebug
+        cd android
+        chmod +x gradlew
+        ./gradlew assembleDebug --stacktrace
 
     - name: Upload Finished APK Asset
       uses: actions/upload-artifact@v4
