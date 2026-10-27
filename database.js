@@ -1,4 +1,3 @@
-
 /**
  * A BREWER'S LAB
  * Production Ingredient Registry — Milestone 1
@@ -392,13 +391,24 @@
       errors.push("condensedTanninRatio must be between 0 and 1.");
     }
 
+    
     for (const acid of ["citric", "malic", "tartaric"]) {
       const value = item.acidsMgPer100g?.[acid];
+
+      // Null means unknown, not zero.
+      if (value === null || value === undefined) {
+        continue;
+      }
 
       if (!Number.isFinite(value) || value < 0) {
         errors.push("Invalid acid value: " + acid);
       }
     }
+
+
+    
+
+   
 
     if (!item.evidence?.level || !Array.isArray(item.evidence.sources)) {
       errors.push("Evidence level and source list are required.");
