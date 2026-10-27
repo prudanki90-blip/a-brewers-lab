@@ -28,6 +28,16 @@
         citric: 3100,
         malic: 2200,
         tartaric: 0
+        
+sources: [
+  {
+    title: "Composition of sugars, organic acids, and total phenolics in 25 berry species",
+    url: "https://pubmed.ncbi.nlm.nih.gov/22924969/",
+    scope: "Published berry-composition research; supports general composition context, not every value in this starter profile."
+  }
+],
+
+        
       },
 
       tanninIndex: 480,
