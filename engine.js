@@ -1,4 +1,3 @@
-
  // A BREWER'S LAB
  // Kinetic extraction and mass-balance core — compatibility milestone
 
@@ -26,8 +25,16 @@ class BrewingKineticEngine {
         }
     }
 
+ 
     normalizeIngredient(item, id) {
         if (!item.id) item.id = id;
+
+        // Null, undefined and blank strings represent unknown data.
+        const isKnownNumber = (value) =>
+            value !== null &&
+            value !== undefined &&
+            !(typeof value === "string" && value.trim() === "") &&
+            Number.isFinite(Number(value));
 
         const aliases = [
             ["moisture_pct", "moisturePct"],
@@ -37,45 +44,67 @@ class BrewingKineticEngine {
         ];
 
         for (const [legacy, current] of aliases) {
-            if (!Number.isFinite(Number(item[legacy])) &&
-                Number.isFinite(Number(item[current]))) {
+            if (!isKnownNumber(item[legacy]) &&
+                isKnownNumber(item[current])) {
                 item[legacy] = Number(item[current]);
             }
         }
 
-        if (!Number.isFinite(Number(item.citric_acid_mg_100g)) &&
-            Number.isFinite(Number(item.acidsMgPer100g?.citric))) {
-            item.citric_acid_mg_100g = Number(item.acidsMgPer100g.citric);
+        if (!isKnownNumber(item.citric_acid_mg_100g) &&
+            isKnownNumber(item.acidsMgPer100g?.citric)) {
+            item.citric_acid_mg_100g =
+                Number(item.acidsMgPer100g.citric);
         }
 
-        if (!Number.isFinite(Number(item.malic_acid_mg_100g)) &&
-            Number.isFinite(Number(item.acidsMgPer100g?.malic))) {
-            item.malic_acid_mg_100g = Number(item.acidsMgPer100g.malic);
+        if (!isKnownNumber(item.malic_acid_mg_100g) &&
+            isKnownNumber(item.acidsMgPer100g?.malic)) {
+            item.malic_acid_mg_100g =
+                Number(item.acidsMgPer100g.malic);
         }
 
-        // Null compound concentrations are unknown, not measured zeros.
+        // Only genuinely known numeric compound values are retained.
         if (!item.oils || typeof item.oils !== "object") {
             const knownOils = {};
+
             for (const [name, value] of Object.entries(item.compounds || {})) {
                 if (typeof value === "number" &&
                     Number.isFinite(value) && value >= 0) {
                     knownOils[name] = value;
                 }
             }
+
             item.oils = knownOils;
         }
 
         return item;
     }
 
+
+
+ 
     assertFinite(value, label) {
+        if (value === null ||
+            value === undefined ||
+            (typeof value === "string" && value.trim() === "")) {
+            throw new TypeError(label + " is missing or unknown.");
+        }
+
         const number = Number(value);
+
         if (!Number.isFinite(number)) {
             throw new TypeError(label + " must be a finite number.");
         }
+
         return number;
     }
 
+
+ 
+
+
+    
+
+  
     brixToSG(brix) {
         const value = this.assertFinite(brix, "Brix");
 
