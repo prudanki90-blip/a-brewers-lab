@@ -43,9 +43,10 @@ jobs:
           cp engine.js www/
           cp database.js www/
           cp data-quality.js www/
+          cp node_modules/chart.js/dist/chart.umd.js www/chart.umd.js
 
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core @capacitor/cli @capacitor/android chart.js
 
           cat > capacitor.config.json <<'EOF'
           {
