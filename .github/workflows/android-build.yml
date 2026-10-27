@@ -24,22 +24,36 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Install Dependencies & Initialize Capacitor
+    - name: Restructure Assets & Initialize Capacitor Workspace
       run: |
+        # 1. Create a clean distribution directory for web assets
+        mkdir -p www
+        
+        # 2. Move your application source files into the isolated web folder
+        cp index.html www/ 2>/dev/null || true
+        cp engine.js www/ 2>/dev/null || true
+        cp database.js www/ 2>/dev/null || true
+        
+        # 3. Initialize Node environment safely
         npm init -y
+        
+        # 4. Install production framework packages
         npm install @capacitor/core @capacitor/cli @capacitor/android
-        # Create minimal capacitor.config.json pointing webDir to current folder
+        
+        # 5. Generate high-fidelity capacitor config targeting the new www path
         cat << 'EOF' > capacitor.config.json
         {
           "appId": "com.lab.molecularbrew",
           "appName": "Predictive Canvas",
-          "webDir": "."
+          "webDir": "www"
         }
         EOF
+        
+        # 6. Execute native compilation scaffolding hooks
         npx cap add android
         npx cap sync android
 
-    - name: Compile Android APK with Stacktrace
+    - name: Compile Unsigned Android Debug APK
       run: |
         cd android
         chmod +x gradlew
@@ -50,3 +64,4 @@ jobs:
       with:
         name: molecular-brew-canvas-apk
         path: android/app/build/outputs/apk/debug/app-debug.apk
+
