@@ -51,7 +51,7 @@ jobs:
           cat > capacitor.config.json <<'EOF'
           {
             "appId": "com.lab.molecularbrew",
-            "appName": "Predictive Canvas",
+            "appName": "A Brewer's Lab",
             "webDir": "www"
           }
           EOF
